@@ -7,8 +7,8 @@ use std::collections::HashSet;
 use std::fmt::{self, Display};
 use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData};
 
-mod schema_recorder;
 mod error;
+mod schema_recorder;
 
 #[derive(Debug, Clone)]
 pub enum Schema {
@@ -70,23 +70,23 @@ pub enum DynamicValue {
     },
 }
 
-
 pub fn read_dynamic<'de, D>(schema: Schema, deser: D) -> Result<DynamicValue, D::Error>
 where
-    D: serde::Deserializer<'de>
+    D: serde::Deserializer<'de>,
 {
     match schema {
         Schema::I32 => {
-            deser.deserialize_i32(todo!());
+            //deser.deserialize_i32();
+            todo!()
         }
         Schema::Struct { name, fields } => {
-            let field_names: Vec<&'static str> = fields.into_iter().map(|(s, _)| leak_string(s)).collect();
-            let filed_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
+            let field_names: Vec<&'static str> =
+                fields.into_iter().map(|(s, _)| leak_string(s)).collect();
+            let field_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
 
-            let v = todo!();
-            deser.deserialize_struct(leak_string(name), &field_names, v);
+            deser.deserialize_struct(leak_string(name), field_names, StructVisitor)
 
-                /*
+            /*
             let mut out_map = HashMap::new();
             for (k, sub_schema) in map {
                 let v = read_dynamic(sub_schema, deser).unwrap();
@@ -94,16 +94,14 @@ where
             }
             Ok(DynamicValue::Struct(out_map))
                 */
-            todo!()
         }
-        _ => todo!()
+        _ => todo!(),
     }
 }
 
-
 pub fn bincode_read_dynamic<R: Read>(schema: Schema, reader: R) -> bincode::Result<DynamicValue> {
     let mut deser = bincode::Deserializer::with_reader(reader, bincode_opts());
-    read_dynamic(schema, &mut deser).unwrap();
+    Ok(read_dynamic(schema, &mut deser).unwrap())
 }
 
 fn bincode_opts() -> impl BincodeOptions {
@@ -133,7 +131,20 @@ mod tests {
         }
 
         let schema = record_schema::<A>().unwrap();
-        dbg!(schema);
+        dbg!(&schema);
+
+        let instance = A {
+            a: 99,
+            b: B {
+                c: 23480,
+            }
+        };
+
+        let bytes = bincode::serialize(&instance).unwrap();
+
+        let dynamic = bincode_read_dynamic(schema, std::io::Cursor::new(bytes)).unwrap();
+
+        dbg!(dynamic);
 
         panic!();
     }
@@ -142,4 +153,20 @@ mod tests {
 // TODO: This should be interned to prevent memory leaks...
 fn leak_string(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
+}
+
+struct StructVisitor;
+
+impl<'de> Visitor<'de> for StructVisitor {
+    type Value = DynamicValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("TODO")
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+        where
+            E: de::Error, {
+        Ok(DynamicValue::I32(v))
+    }
 }
