@@ -36,10 +36,13 @@ pub enum Schema {
     Option,
     ByteBuf,
     String,
-    Struct {
-        name: String,
-        fields: Vec<(String, Schema)>,
-    },
+    Struct(StructSchema),
+}
+
+#[derive(Debug, Clone)]
+pub struct StructSchema {
+    name: String,
+    fields: Vec<(String, Schema)>,
 }
 
 #[derive(Debug, Clone)]
@@ -78,23 +81,29 @@ where
 {
     match schema {
         Schema::I32 => Ok(DynamicValue::I32(i32::deserialize(deser)?)),
-        Schema::Struct { name, fields } => {
-            let (field_names, field_schema): (Vec<String>, Vec<Schema>) =
-                fields.into_iter().unzip();
+        Schema::Struct(schema) => {
+            let field_names: Vec<&'static str> = schema
+                .fields
+                .iter()
+                .map(|(name, _)| leak_string(name.clone()))
+                .collect();
 
-            let field_names: Vec<&'static str> = field_names.into_iter().map(leak_string).collect();
             let field_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
 
-            deser.deserialize_struct(leak_string(name), field_names, StructVisitor(field_schema))
+            deser.deserialize_struct(
+                leak_string(schema.name.clone()),
+                field_names,
+                StructVisitor(schema),
+            )
 
             /*
             let mut out_map = HashMap::new();
             for (k, sub_schema) in map {
-                let v = read_dynamic(sub_schema, deser).unwrap();
-                out_map.insert(k, v);
+            let v = read_dynamic(sub_schema, deser).unwrap();
+            out_map.insert(k, v);
             }
             Ok(DynamicValue::Struct(out_map))
-                */
+            */
         }
         _ => todo!(),
     }
@@ -154,7 +163,7 @@ fn leak_string(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
 }
 
-struct StructVisitor(Vec<Schema>);
+struct StructVisitor(StructSchema);
 
 impl<'de> Visitor<'de> for StructVisitor {
     type Value = DynamicValue;
@@ -167,21 +176,23 @@ impl<'de> Visitor<'de> for StructVisitor {
     where
         A: SeqAccess<'de>,
     {
-        let mut elements = vec![];
+        let mut fields = vec![];
 
-        for field in self.0 {
-            HACKED_STRUCT_SCHEMA.with(|f| *f.borrow_mut() = Some(field));
+        for (name, schema) in self.0.fields {
+            HACKED_STRUCT_SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
             let HackedStruct(dynamic) = seq
                 .next_element::<HackedStruct>()?
                 .expect("Schema mismatch");
-            elements.push(dynamic);
+
+            fields.push((name, dynamic));
         }
 
-        Ok(DynamicValue::Seq(elements))
+        Ok(DynamicValue::Struct {
+            name: self.0.name,
+            fields,
+        })
     }
 }
-
-struct SequenceVisitor;
 
 struct HackedStruct(DynamicValue);
 

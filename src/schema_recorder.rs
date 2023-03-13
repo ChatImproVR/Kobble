@@ -6,8 +6,8 @@ use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};
 use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData};
 
-use crate::Schema;
 use crate::error::GenericError;
+use crate::{Schema, StructSchema};
 
 /// Use the given struct to record a schema
 pub fn record_schema<'de, T: Deserialize<'de>>() -> Result<Schema, GenericError> {
@@ -46,10 +46,10 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
             .zip(rec.records.0)
             .collect();
 
-        self.0.push(Schema::Struct {
+        self.0.push(Schema::Struct(StructSchema {
             name: name.into(),
             fields,
-        });
+        }));
 
         ret
     }
@@ -345,4 +345,3 @@ impl StructRecorder {
         }
     }
 }
-
