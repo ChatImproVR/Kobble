@@ -1,14 +1,6 @@
 use bincode::Options as BincodeOptions;
 use deserialize::deserialize_dynamic;
-use serde::de::value::{MapDeserializer, SeqDeserializer};
-use serde::de::SeqAccess;
-use serde::{de, ser};
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::fmt::{self, Display};
-use std::rc::Rc;
-use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData};
+use std::{collections::HashMap, io::Read};
 
 mod deserialize;
 mod error;
@@ -96,8 +88,7 @@ fn bincode_opts() -> impl BincodeOptions {
 #[cfg(test)]
 mod tests {
     use crate::{schema_recorder::record_schema, deserialize::SchemaDeserializer};
-
-    use super::*;
+    use serde::{Serialize, Deserialize};
 
     #[test]
     fn it_works() {

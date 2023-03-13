@@ -1,10 +1,7 @@
-use bincode::Options as BincodeOptions;
-use serde::de::value::{MapDeserializer, SeqDeserializer};
-use serde::de::SeqAccess;
-use serde::{de, ser};
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
-use std::fmt::{self, Display};
-use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData};
+use serde::de::{self, SeqAccess, value::{MapDeserializer, SeqDeserializer}, Visitor};
+use serde::{Deserialize, Deserializer};
+
+
 
 use crate::error::GenericError;
 use crate::{Schema, StructSchema};
@@ -56,9 +53,9 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_enum<V>(
         self,
-        name: &'static str,
-        variants: &'static [&'static str],
-        visitor: V,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -66,14 +63,14 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         todo!()
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
@@ -82,8 +79,8 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_unit_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -93,9 +90,9 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_tuple_struct<V>(
         self,
-        name: &'static str,
-        len: usize,
-        visitor: V,
+        _name: &'static str,
+        _len: usize,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -105,8 +102,8 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_newtype_struct<V>(
         self,
-        name: &'static str,
-        visitor: V,
+        _name: &'static str,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -118,14 +115,14 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         todo!()
     }
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
         todo!()
     }
 
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
