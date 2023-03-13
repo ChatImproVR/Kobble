@@ -3,8 +3,10 @@ use serde::de::value::{MapDeserializer, SeqDeserializer};
 use serde::de::SeqAccess;
 use serde::{de, ser};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::fmt::{self, Display};
+use std::rc::Rc;
 use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData};
 
 mod error;
@@ -75,16 +77,15 @@ where
     D: serde::Deserializer<'de>,
 {
     match schema {
-        Schema::I32 => {
-            //deser.deserialize_i32();
-            todo!()
-        }
+        Schema::I32 => Ok(DynamicValue::I32(i32::deserialize(deser)?)),
         Schema::Struct { name, fields } => {
-            let field_names: Vec<&'static str> =
-                fields.into_iter().map(|(s, _)| leak_string(s)).collect();
+            let (field_names, field_schema): (Vec<String>, Vec<Schema>) =
+                fields.into_iter().unzip();
+
+            let field_names: Vec<&'static str> = field_names.into_iter().map(leak_string).collect();
             let field_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
 
-            deser.deserialize_struct(leak_string(name), field_names, StructVisitor)
+            deser.deserialize_struct(leak_string(name), field_names, StructVisitor(field_schema))
 
             /*
             let mut out_map = HashMap::new();
@@ -135,9 +136,7 @@ mod tests {
 
         let instance = A {
             a: 99,
-            b: B {
-                c: 23480,
-            }
+            b: B { c: 23480 },
         };
 
         let bytes = bincode::serialize(&instance).unwrap();
@@ -155,7 +154,7 @@ fn leak_string(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
 }
 
-struct StructVisitor;
+struct StructVisitor(Vec<Schema>);
 
 impl<'de> Visitor<'de> for StructVisitor {
     type Value = DynamicValue;
@@ -164,9 +163,40 @@ impl<'de> Visitor<'de> for StructVisitor {
         formatter.write_str("TODO")
     }
 
-    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
-        where
-            E: de::Error, {
-        Ok(DynamicValue::I32(v))
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut elements = vec![];
+
+        for field in self.0 {
+            HACKED_STRUCT_SCHEMA.with(|f| *f.borrow_mut() = Some(field));
+            let HackedStruct(dynamic) = seq
+                .next_element::<HackedStruct>()?
+                .expect("Schema mismatch");
+            elements.push(dynamic);
+        }
+
+        Ok(DynamicValue::Seq(elements))
+    }
+}
+
+struct SequenceVisitor;
+
+struct HackedStruct(DynamicValue);
+
+thread_local! {
+    static HACKED_STRUCT_SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
+}
+
+impl<'de> Deserialize<'de> for HackedStruct {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let schema = HACKED_STRUCT_SCHEMA
+            .with(|f| f.take())
+            .expect("Schema not set!");
+        read_dynamic(schema, deserializer).map(HackedStruct)
     }
 }
