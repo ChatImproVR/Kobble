@@ -1,5 +1,7 @@
 use bincode::Options as BincodeOptions;
 use deserialize::deserialize_dynamic;
+use schema_recorder::record_schema;
+use serde::Deserialize;
 use std::{collections::HashMap, io::Read};
 
 mod serialize;
@@ -88,7 +90,7 @@ fn bincode_opts() -> impl BincodeOptions {
 
 #[cfg(test)]
 mod tests {
-    use crate::{schema_recorder::record_schema, deserialize::SchemaDeserializer};
+    use crate::{deserialize::SchemaDeserializer, Schema};
     use serde::{Serialize, Deserialize};
 
     #[test]
@@ -104,8 +106,7 @@ mod tests {
             c: i32,
         }
 
-        let schema = record_schema::<A>().unwrap();
-        dbg!(&schema);
+        let schema = Schema::infer::<A>();
 
         let instance = A {
             a: 99,
@@ -126,4 +127,10 @@ mod tests {
 // TODO: This should be interned to prevent memory leaks...
 pub(crate) fn leak_string(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
+}
+
+impl Schema {
+    pub fn infer<'de, T: Deserialize<'de>>() -> Self {
+        record_schema::<T>().expect("Failed to infer schema")
+    }
 }
