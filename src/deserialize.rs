@@ -3,7 +3,7 @@ use serde::{de::Visitor, Deserialize, Deserializer};
 use std::cell::RefCell;
 use std::fmt;
 
-use crate::{Schema, DynamicValue, StructSchema};
+use crate::{Schema, DynamicValue, StructSchema, leak_string};
 
 /// Construct a DynamicValue based on `schema` using the given deserializer
 pub fn deserialize_dynamic<'de, D>(schema: Schema, deser: D) -> Result<DynamicValue, D::Error>
@@ -90,9 +90,4 @@ impl<'de> Deserialize<'de> for SchemaDeserializer {
             .expect("Schema not set!");
         deserialize_dynamic(schema, deserializer).map(SchemaDeserializer)
     }
-}
-
-// TODO: This should be interned to prevent memory leaks...
-fn leak_string(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
 }

@@ -2,6 +2,7 @@ use bincode::Options as BincodeOptions;
 use deserialize::deserialize_dynamic;
 use std::{collections::HashMap, io::Read};
 
+mod serialize;
 mod deserialize;
 mod error;
 mod schema_recorder;
@@ -116,8 +117,13 @@ mod tests {
         SchemaDeserializer::set_schema(schema);
         let SchemaDeserializer(dynamic) = bincode::deserialize(&bytes).unwrap();
 
-        dbg!(dynamic);
+        let re_serialized = bincode::serialize(&dynamic).unwrap();
 
-        panic!();
+        assert_eq!(bytes, re_serialized);
     }
+}
+
+// TODO: This should be interned to prevent memory leaks...
+pub(crate) fn leak_string(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
 }
