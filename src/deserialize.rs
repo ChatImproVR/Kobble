@@ -11,14 +11,15 @@ use std::{borrow::BorrowMut, collections::HashMap, io::Read, marker::PhantomData
 
 use crate::{Schema, DynamicValue, StructSchema};
 
-
-pub fn read_dynamic<'de, D>(schema: Schema, deser: D) -> Result<DynamicValue, D::Error>
+/// Construct a DynamicValue based on `schema` using the given deserializer
+pub fn deserialize_dynamic<'de, D>(schema: Schema, deser: D) -> Result<DynamicValue, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
     match schema {
         Schema::I32 => Ok(DynamicValue::I32(i32::deserialize(deser)?)),
         Schema::Struct(schema) => {
+            // Make field names static so serde is happy
             let field_names: Vec<&'static str> = schema
                 .fields
                 .iter()
@@ -27,29 +28,18 @@ where
 
             let field_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
 
+            // Deserialize the struct
             deser.deserialize_struct(
                 leak_string(schema.name.clone()),
                 field_names,
                 StructVisitor(schema),
             )
-
-            /*
-            let mut out_map = HashMap::new();
-            for (k, sub_schema) in map {
-            let v = read_dynamic(sub_schema, deser).unwrap();
-            out_map.insert(k, v);
-            }
-            Ok(DynamicValue::Struct(out_map))
-            */
         }
         _ => todo!(),
     }
 }
-// TODO: This should be interned to prevent memory leaks...
-fn leak_string(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
 
+/// Visitor for structs; converts a StructSchema into a DynamicValue under the given deserializer
 struct StructVisitor(StructSchema);
 
 impl<'de> Visitor<'de> for StructVisitor {
@@ -66,9 +56,9 @@ impl<'de> Visitor<'de> for StructVisitor {
         let mut fields = vec![];
 
         for (name, schema) in self.0.fields {
-            HACKED_STRUCT_SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
-            let HackedStruct(dynamic) = seq
-                .next_element::<HackedStruct>()?
+            SchemaDeserializer::set_schema(schema);
+            let SchemaDeserializer(dynamic) = seq
+                .next_element::<SchemaDeserializer>()?
                 .expect("Schema mismatch");
 
             fields.push((name, dynamic));
@@ -81,20 +71,34 @@ impl<'de> Visitor<'de> for StructVisitor {
     }
 }
 
-struct HackedStruct(DynamicValue);
+/// A struct which pretends to be the schema set with set_schema. 
+/// Note that schema are set on a per-thread basis!
+pub struct SchemaDeserializer(pub DynamicValue);
 
-thread_local! {
-    static HACKED_STRUCT_SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
+impl SchemaDeserializer {
+    thread_local! {
+        static SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
+    }
+
+    /// Set the schema (for the current thread!)
+    pub fn set_schema(schema: Schema) {
+        Self::SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
+    }
 }
 
-impl<'de> Deserialize<'de> for HackedStruct {
+impl<'de> Deserialize<'de> for SchemaDeserializer {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let schema = HACKED_STRUCT_SCHEMA
+        let schema = Self::SCHEMA
             .with(|f| f.take())
             .expect("Schema not set!");
-        read_dynamic(schema, deserializer).map(HackedStruct)
+        deserialize_dynamic(schema, deserializer).map(SchemaDeserializer)
     }
+}
+
+// TODO: This should be interned to prevent memory leaks...
+fn leak_string(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
 }

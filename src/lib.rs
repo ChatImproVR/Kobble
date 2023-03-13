@@ -1,5 +1,5 @@
 use bincode::Options as BincodeOptions;
-use deserialize::read_dynamic;
+use deserialize::deserialize_dynamic;
 use serde::de::value::{MapDeserializer, SeqDeserializer};
 use serde::de::SeqAccess;
 use serde::{de, ser};
@@ -83,7 +83,7 @@ pub enum DynamicValue {
 /// Use bincode to read the given structure based on its schema
 pub fn bincode_read_dynamic<R: Read>(schema: Schema, reader: R) -> bincode::Result<DynamicValue> {
     let mut deser = bincode::Deserializer::with_reader(reader, bincode_opts());
-    Ok(read_dynamic(schema, &mut deser).unwrap())
+    Ok(deserialize_dynamic(schema, &mut deser).unwrap())
 }
 
 fn bincode_opts() -> impl BincodeOptions {
@@ -95,7 +95,7 @@ fn bincode_opts() -> impl BincodeOptions {
 
 #[cfg(test)]
 mod tests {
-    use crate::schema_recorder::record_schema;
+    use crate::{schema_recorder::record_schema, deserialize::SchemaDeserializer};
 
     use super::*;
 
@@ -122,7 +122,8 @@ mod tests {
 
         let bytes = bincode::serialize(&instance).unwrap();
 
-        let dynamic = bincode_read_dynamic(schema, std::io::Cursor::new(bytes)).unwrap();
+        SchemaDeserializer::set_schema(schema);
+        let SchemaDeserializer(dynamic) = bincode::deserialize(&bytes).unwrap();
 
         dbg!(dynamic);
 
