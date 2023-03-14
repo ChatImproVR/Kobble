@@ -38,6 +38,9 @@ impl Serialize for DynamicValue {
                 }
                 ser.end()
             }
+            DynamicValue::UnitStruct(name) => {
+                serializer.serialize_unit_struct(leak_string(name.clone()))
+            }
             DynamicValue::String(s) => serializer.serialize_str(s),
             DynamicValue::I8(v) => serializer.serialize_i8(*v),
             DynamicValue::U8(v) => serializer.serialize_u8(*v),
@@ -52,8 +55,8 @@ impl Serialize for DynamicValue {
             DynamicValue::Char(v) => serializer.serialize_char(*v),
             DynamicValue::F32(v) => serializer.serialize_f32(*v),
             DynamicValue::F64(v) => serializer.serialize_f64(*v),
+            DynamicValue::Bool(v) => serializer.serialize_bool(*v),
             DynamicValue::Unit => serializer.serialize_unit(),
-            _ => todo!(),
         }
     }
 }

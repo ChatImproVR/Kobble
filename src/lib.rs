@@ -66,8 +66,8 @@ pub enum VariantSchema {
 /// Runtime-modifiable representation of a data structure
 #[derive(Debug, Clone)]
 pub enum DynamicValue {
-    Seq(Vec<DynamicValue>),
-    Map(HashMap<String, DynamicValue>),
+    //Seq(Vec<DynamicValue>),
+    //Map(HashMap<String, DynamicValue>),
     I8(i8),
     U8(u8),
     I16(i16),
@@ -83,9 +83,9 @@ pub enum DynamicValue {
     Bool(bool),
     Char(char),
     Unit,
-    Bytes(Vec<u8>),
-    Option(Option<Box<DynamicValue>>),
-    ByteBuf(Vec<u8>),
+    //Bytes(Vec<u8>),
+    //Option(Option<Box<DynamicValue>>),
+    //ByteBuf(Vec<u8>),
     String(String),
     TupleStruct(String, Vec<DynamicValue>),
     NewtypeStruct(String, Box<DynamicValue>),

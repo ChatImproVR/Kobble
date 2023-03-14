@@ -157,22 +157,18 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         unimplemented!("Any")
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::Seq);
-        let seq = SeqDeserializer::new(Vec::<()>::new().into_iter());
-        visitor.visit_seq(seq)
+        unimplemented!("Is this gauranteed to deserialize a homogenous, variable-length collection?")
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::Map);
-        let map = MapDeserializer::new(Vec::<((), ())>::new().into_iter());
-        visitor.visit_map(map)
+        unimplemented!("Is this gauranteed to deserialize a homogenous, variable-length collection?")
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
