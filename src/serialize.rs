@@ -40,6 +40,11 @@ impl Serialize for DynamicValue {
             DynamicValue::UnitStruct(name) => {
                 serializer.serialize_unit_struct(string_to_static(name.clone()))
             }
+            DynamicValue::Enum(schema, idx) => serializer.serialize_unit_variant(
+                string_to_static(schema.name.clone()),
+                *idx,
+                string_to_static(schema.variants[*idx as usize].clone()),
+            ),
             DynamicValue::String(s) => serializer.serialize_str(s),
             DynamicValue::I8(v) => serializer.serialize_i8(*v),
             DynamicValue::U8(v) => serializer.serialize_u8(*v),

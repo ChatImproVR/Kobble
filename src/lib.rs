@@ -1,5 +1,4 @@
 use once_cell::sync::Lazy;
-use schema_recorder::record_schema;
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashSet};
 
@@ -9,6 +8,7 @@ mod schema_recorder;
 mod serialize;
 
 pub use deserialize::{deserialize_dynamic, SchemaDeserializer};
+pub use schema_recorder::record_schema;
 
 /// Representation of a data serde-compatible data structure
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
@@ -36,12 +36,25 @@ pub enum Schema {
     String,
     Struct(StructSchema),
     Tuple(TupleSchema),
+    /// (name, tuple)
     TupleStruct(String, TupleSchema),
+    /// (name, data)
     NewtypeStruct(String, Box<Schema>),
+    /// Contains name
     UnitStruct(String),
+    /// (Enum name, variants)
+    /// NOTE This only describes data-less enums!
+    Enum(EnumSchema),
 }
 
 pub type TupleSchema = Vec<Schema>;
+
+/// Represents an enum
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
+pub struct EnumSchema {
+    pub name: String,
+    pub variants: Vec<String>,
+}
 
 /// Represents a struct
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
@@ -105,6 +118,7 @@ pub enum DynamicValue {
     },
     Tuple(Vec<DynamicValue>),
     UnitStruct(String),
+    Enum(EnumSchema, u32),
 }
 
 #[cfg(test)]
@@ -165,7 +179,7 @@ mod tests {
     // For now, we don't know how to do this!
     #[test]
     #[should_panic]
-    fn test_enum_basic() {
+    fn test_data_enum() {
         #[derive(Serialize, Deserialize)]
         enum A {
             B(i32),
@@ -173,6 +187,19 @@ mod tests {
         }
 
         roundrip_test(A::B(23480));
+    }
+
+    // For now, we don't know how to do this!
+    #[test]
+    fn test_unit_enum() {
+        #[derive(Serialize, Deserialize)]
+        enum A {
+            Spoon,
+            Fork,
+        }
+
+        roundrip_test(A::Fork);
+        roundrip_test(A::Spoon);
     }
 
     #[test]

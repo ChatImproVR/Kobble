@@ -3,7 +3,7 @@ use serde::{de::Visitor, Deserialize, Deserializer};
 use std::cell::RefCell;
 use std::fmt;
 
-use crate::{string_to_static, DynamicValue, Schema, StructSchema, TupleSchema};
+use crate::{string_to_static, DynamicValue, EnumSchema, Schema, StructSchema, TupleSchema};
 
 /// A struct which pretends to be the schema set with set_schema.
 /// Note that schema are set on a per-thread basis!
@@ -65,6 +65,22 @@ where
             Ok(DynamicValue::TupleStruct(name, tuple))
         }
         Schema::UnitStruct(name) => Ok(DynamicValue::UnitStruct(name)),
+        Schema::Enum(schema) => {
+            // Make field names static so serde is happy
+            let variant_names: Vec<&'static str> = schema
+                .variants
+                .iter()
+                .map(|name| string_to_static(name.clone()))
+                .collect();
+            let variant_names: &'static [&'static str] =
+                Box::leak(variant_names.into_boxed_slice());
+
+            deser.deserialize_enum(
+                string_to_static(schema.name.clone()),
+                variant_names,
+                EnumVisitor(schema),
+            )
+        }
         Schema::U8 => Ok(DynamicValue::U8(u8::deserialize(deser)?)),
         Schema::I8 => Ok(DynamicValue::I8(i8::deserialize(deser)?)),
         Schema::U16 => Ok(DynamicValue::U16(u16::deserialize(deser)?)),
@@ -123,7 +139,7 @@ impl<'de> Visitor<'de> for TupleVisitor {
     type Value = DynamicValue;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("TODO")
+        formatter.write_str("Tuple")
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -142,5 +158,24 @@ impl<'de> Visitor<'de> for TupleVisitor {
         }
 
         Ok(DynamicValue::Tuple(fields))
+    }
+}
+
+/// Visitor for structs; converts a StructSchema into a DynamicValue under the given deserializer
+struct EnumVisitor(EnumSchema);
+
+impl<'de> Visitor<'de> for EnumVisitor {
+    type Value = DynamicValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("Enum")
+    }
+
+    fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::EnumAccess<'de>,
+    {
+        let (v, _) = data.variant()?;
+        Ok(DynamicValue::Enum(self.0, v))
     }
 }

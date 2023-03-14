@@ -1,6 +1,6 @@
 use crate::error::GenericError;
-use crate::{Schema, StructSchema};
-use serde::de::{self, SeqAccess, Visitor};
+use crate::{EnumSchema, Schema, StructSchema};
+use serde::de::{self, EnumAccess, IntoDeserializer, SeqAccess, VariantAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 
 /// Use the given struct to record a schema
@@ -25,21 +25,19 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_enum<V>(
         self,
-        _name: &'static str,
-        _variants: &'static [&'static str],
-        _visitor: V,
+        name: &'static str,
+        variants: &'static [&'static str],
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        // Because visitor.visit_enum() necessarily consumes visitor, we cannot visit multiple
-        // enum variants in one shot. One potential solution would be to invoke the entire
-        // serializer many times. Each invocation would take a different path through the variant
-        // tree. These trees would then be merged into a single schema containing all variants.
-        // But this must wait!
-        Err(GenericError(
-            "Exploring multiple enum variants may prove challenging...".into(),
-        ))
+        self.0.push(Schema::Enum(EnumSchema {
+            name: name.into(),
+            variants: variants.iter().map(|v| v.to_string()).collect(),
+        }));
+
+        visitor.visit_enum(EnumRecorder::new(variants.len()))
     }
 
     fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
@@ -371,7 +369,6 @@ impl<'de> SeqAccess<'de> for SeqRecorder {
     }
 }
 
-/*
 struct EnumRecorder {
     variants: SchemaRecorder,
     len: usize,
@@ -394,11 +391,8 @@ impl<'de> EnumAccess<'de> for EnumRecorder {
     where
         V: de::DeserializeSeed<'de>,
     {
-        dbg!(std::any::type_name::<V>());
-        dbg!(std::any::type_name::<V::Value>());
-        //let r = seed.deserialize(0.into_deserializer())?;
-        //Ok((r, self))
-        todo!()
+        let r = seed.deserialize(0u32.into_deserializer())?;
+        Ok((r, self))
     }
 }
 
@@ -406,14 +400,21 @@ impl<'de> VariantAccess<'de> for EnumRecorder {
     type Error = GenericError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {
-        todo!()
+        Ok(())
     }
 
     fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        // Because visitor.visit_enum() necessarily consumes visitor, we cannot visit multiple
+        // enum variants in one shot. One potential solution would be to invoke the entire
+        // serializer many times. Each invocation would take a different path through the variant
+        // tree. These trees would then be merged into a single schema containing all variants.
+        // But this must wait!
+        Err(GenericError(
+            "Enums containing data are unsupported for schema generation.".into(),
+        ))
     }
 
     fn struct_variant<V>(
@@ -424,14 +425,17 @@ impl<'de> VariantAccess<'de> for EnumRecorder {
     where
         V: Visitor<'de>,
     {
-        todo!()
+        Err(GenericError(
+            "Enums containing data are unsupported for schema generation.".into(),
+        ))
     }
 
     fn newtype_variant_seed<T>(mut self, seed: T) -> Result<T::Value, Self::Error>
     where
         T: de::DeserializeSeed<'de>,
     {
-        todo!()
+        Err(GenericError(
+            "Enums containing data are unsupported for schema generation.".into(),
+        ))
     }
 }
-*/
