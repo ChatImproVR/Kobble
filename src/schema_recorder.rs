@@ -34,7 +34,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        let mut rec = StructRecorder::new(fields.len());
+        let mut rec = SeqRecorder::new(fields.len());
         let ret = visitor.visit_seq(&mut rec);
 
         let fields = fields
@@ -63,11 +63,16 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         todo!()
     }
 
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        let mut rec = SeqRecorder::new(len);
+        let ret = visitor.visit_seq(&mut rec);
+
+        self.0.push(Schema::Tuple(rec.records.0));
+
+        ret
     }
 
     fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
@@ -308,12 +313,12 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     }
 }
 
-struct StructRecorder {
+struct SeqRecorder {
     records: SchemaRecorder,
     len: usize,
 }
 
-impl<'de> SeqAccess<'de> for StructRecorder {
+impl<'de> SeqAccess<'de> for SeqRecorder {
     type Error = GenericError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
@@ -334,7 +339,7 @@ impl<'de> SeqAccess<'de> for StructRecorder {
     }
 }
 
-impl StructRecorder {
+impl SeqRecorder {
     pub fn new(len: usize) -> Self {
         Self {
             records: SchemaRecorder::new(),

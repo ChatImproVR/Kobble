@@ -34,6 +34,7 @@ pub enum Schema {
     ByteBuf,
     String,
     Struct(StructSchema),
+    Tuple(TupleSchema),
 }
 
 /// Represents a struct
@@ -42,6 +43,8 @@ pub struct StructSchema {
     name: String,
     fields: Vec<(String, Schema)>,
 }
+
+pub type TupleSchema = Vec<Schema>;
 
 /// Runtime-modifiable representation of a data structure
 #[derive(Debug, Clone)]
@@ -72,6 +75,7 @@ pub enum DynamicValue {
         name: String,
         fields: Vec<(String, DynamicValue)>,
     },
+    Tuple(Vec<DynamicValue>),
 }
 
 #[cfg(test)]
@@ -99,7 +103,12 @@ mod tests {
     }
 
     #[test]
-    fn test_basic() {
+    fn test_tuple() {
+        roundrip_test((0i32, 0i32))
+    }
+
+    #[test]
+    fn test_struct() {
         #[derive(Serialize, Deserialize)]
         struct A {
             a: i32,

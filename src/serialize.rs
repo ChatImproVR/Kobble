@@ -1,4 +1,4 @@
-use serde::ser::SerializeStruct;
+use serde::ser::*;
 use serde::{Serialize, Serializer};
 
 use crate::{leak_string, DynamicValue};
@@ -20,7 +20,15 @@ impl Serialize for DynamicValue {
 
                 ser.end()
             }
-            _ => todo!(),
+            DynamicValue::Tuple(fields) => {
+                let mut ser = serializer.serialize_tuple(fields.len())?;
+                for field in fields {
+                    ser.serialize_element(field)?;
+                }
+
+                ser.end()
+            }
+            _ => todo!()
         }
     }
 }

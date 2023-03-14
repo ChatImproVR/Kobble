@@ -3,7 +3,32 @@ use serde::{de::Visitor, Deserialize, Deserializer};
 use std::cell::RefCell;
 use std::fmt;
 
-use crate::{Schema, DynamicValue, StructSchema, leak_string};
+use crate::{leak_string, DynamicValue, Schema, StructSchema, TupleSchema};
+
+/// A struct which pretends to be the schema set with set_schema.
+/// Note that schema are set on a per-thread basis!
+pub struct SchemaDeserializer(pub DynamicValue);
+
+impl SchemaDeserializer {
+    thread_local! {
+        static SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
+    }
+
+    /// Set the schema (for the current thread!)
+    pub fn set_schema(schema: Schema) {
+        Self::SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
+    }
+}
+
+impl<'de> Deserialize<'de> for SchemaDeserializer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let schema = Self::SCHEMA.with(|f| f.take()).expect("Schema not set!");
+        deserialize_dynamic(schema, deserializer).map(SchemaDeserializer)
+    }
+}
 
 /// Construct a DynamicValue based on `schema` using the given deserializer
 pub fn deserialize_dynamic<'de, D>(schema: Schema, deser: D) -> Result<DynamicValue, D::Error>
@@ -12,6 +37,7 @@ where
 {
     match schema {
         Schema::I32 => Ok(DynamicValue::I32(i32::deserialize(deser)?)),
+        Schema::Tuple(schema) => deser.deserialize_tuple(schema.len(), TupleVisitor(schema)),
         Schema::Struct(schema) => {
             // Make field names static so serde is happy
             let field_names: Vec<&'static str> = schema
@@ -65,30 +91,31 @@ impl<'de> Visitor<'de> for StructVisitor {
     }
 }
 
-/// A struct which pretends to be the schema set with set_schema. 
-/// Note that schema are set on a per-thread basis!
-pub struct SchemaDeserializer(pub DynamicValue);
+/// Visitor for structs; converts a StructSchema into a DynamicValue under the given deserializer
+struct TupleVisitor(TupleSchema);
 
-impl SchemaDeserializer {
-    thread_local! {
-        static SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
+impl<'de> Visitor<'de> for TupleVisitor {
+    type Value = DynamicValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("TODO")
     }
 
-    /// Set the schema
-    /// NOTE: This has thread-local side effects!
-    pub fn set_schema(schema: Schema) {
-        Self::SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
-    }
-}
-
-impl<'de> Deserialize<'de> for SchemaDeserializer {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-        D: Deserializer<'de>,
+        A: SeqAccess<'de>,
     {
-        let schema = Self::SCHEMA
-            .with(|f| f.take())
-            .expect("Schema not set!");
-        deserialize_dynamic(schema, deserializer).map(SchemaDeserializer)
+        let mut fields = vec![];
+
+        for schema in self.0 {
+            SchemaDeserializer::set_schema(schema);
+            let SchemaDeserializer(dynamic) = seq
+                .next_element::<SchemaDeserializer>()?
+                .expect("Schema mismatch");
+
+            fields.push(dynamic);
+        }
+
+        Ok(DynamicValue::Tuple(fields))
     }
 }
