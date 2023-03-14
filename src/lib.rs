@@ -110,6 +110,7 @@ pub enum DynamicValue {
 #[cfg(test)]
 mod tests {
     use crate::{deserialize::SchemaDeserializer, Schema};
+    use glam::{Vec3, Vec4};
     use serde::{Deserialize, Serialize};
 
     fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
@@ -215,6 +216,21 @@ mod tests {
         struct A;
 
         roundrip_test(A);
+    }
+
+    #[test]
+    fn test_vector() {
+        roundrip_test(Vec3::new(1., 2., 3.));
+    }
+
+    #[test]
+    fn test_matrix() {
+        roundrip_test(glam::Mat4::from_cols(
+            Vec4::new(1., 2., 3., 4.),
+            Vec4::new(5., 6., 7., 8.),
+            Vec4::new(9., 10., 11., 12.),
+            Vec4::new(13., 14., 15., 16.),
+        ));
     }
 }
 
