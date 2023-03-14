@@ -48,6 +48,7 @@ pub struct StructSchema {
     fields: Vec<(String, Schema)>,
 }
 
+/*
 /// Represents an enum
 #[derive(Debug, Clone)]
 pub struct EnumSchema {
@@ -62,6 +63,7 @@ pub enum VariantSchema {
     Tuple(TupleSchema),
     Unit,
 }
+*/
 
 /// Runtime-modifiable representation of a data structure
 #[derive(Debug, Clone)]
@@ -171,6 +173,14 @@ mod tests {
         struct A(i32, String);
 
         roundrip_test(A(9999, "Binkus".to_string()));
+    }
+
+    #[test]
+    fn test_unit_struct() {
+        #[derive(Serialize, Deserialize)]
+        struct A;
+
+        roundrip_test(A);
     }
 }
 

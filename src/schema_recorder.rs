@@ -1,10 +1,6 @@
 use crate::error::GenericError;
-use crate::{EnumSchema, Schema, StructSchema};
-use serde::de::{
-    self,
-    value::{MapDeserializer, SeqDeserializer},
-    SeqAccess, Visitor,
-};
+use crate::{Schema, StructSchema};
+use serde::de::{self, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 
 /// Use the given struct to record a schema
@@ -93,13 +89,14 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
 
     fn deserialize_unit_struct<V>(
         self,
-        _name: &'static str,
-        _visitor: V,
+        name: &'static str,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!("Not sure if I should use the visitor?")
+        self.0.push(Schema::UnitStruct(name.to_string()));
+        visitor.visit_unit()
     }
 
     fn deserialize_tuple_struct<V>(
@@ -161,14 +158,18 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        unimplemented!("Is this gauranteed to deserialize a homogenous, variable-length collection?")
+        unimplemented!(
+            "Is this gauranteed to deserialize a homogenous, variable-length collection?"
+        )
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!("Is this gauranteed to deserialize a homogenous, variable-length collection?")
+        unimplemented!(
+            "Is this gauranteed to deserialize a homogenous, variable-length collection?"
+        )
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
