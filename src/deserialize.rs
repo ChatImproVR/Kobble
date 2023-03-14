@@ -53,7 +53,25 @@ where
                 StructVisitor(schema),
             )
         }
+        Schema::NewtypeStruct(name, schema) => {
+            let struct_ = deser.deserialize_newtype_struct(
+                leak_string(name.clone()),
+                TupleVisitor(vec![*schema]),
+            )?;
+            let DynamicValue::Tuple(mut tuple) = struct_ else { panic!() };
+            Ok(DynamicValue::NewtypeStruct(name, Box::new(tuple.remove(0))))
+        }
         Schema::Tuple(schema) => deser.deserialize_tuple(schema.len(), TupleVisitor(schema)),
+        Schema::TupleStruct(name, schema) => {
+            let tuple = deser.deserialize_tuple_struct(
+                leak_string(name.clone()),
+                schema.len(),
+                TupleVisitor(schema),
+            )?;
+            let DynamicValue::Tuple(tuple) = tuple else { panic!() };
+            Ok(DynamicValue::TupleStruct(name, tuple))
+        }
+        Schema::UnitStruct(name) => Ok(DynamicValue::UnitStruct(name)),
         Schema::U8 => Ok(DynamicValue::U8(u8::deserialize(deser)?)),
         Schema::I8 => Ok(DynamicValue::I8(i8::deserialize(deser)?)),
         Schema::U16 => Ok(DynamicValue::U16(u16::deserialize(deser)?)),
@@ -66,8 +84,16 @@ where
         Schema::I128 => Ok(DynamicValue::I128(i128::deserialize(deser)?)),
         Schema::F32 => Ok(DynamicValue::F32(f32::deserialize(deser)?)),
         Schema::F64 => Ok(DynamicValue::F64(f64::deserialize(deser)?)),
+        Schema::Bool => Ok(DynamicValue::Bool(bool::deserialize(deser)?)),
+        Schema::Char => Ok(DynamicValue::Char(char::deserialize(deser)?)),
         Schema::Unit => Ok(DynamicValue::Unit),
-        _ => todo!(),
+        Schema::Str => todo!(),
+        Schema::Map => todo!(),
+        Schema::Bytes => todo!(),
+        Schema::ByteBuf => todo!(),
+        Schema::Option => todo!(),
+        Schema::String => todo!(),
+        Schema::Seq => todo!(),
     }
 }
 
@@ -78,7 +104,7 @@ impl<'de> Visitor<'de> for StructVisitor {
     type Value = DynamicValue;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("TODO")
+        formatter.write_str("Struct")
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>

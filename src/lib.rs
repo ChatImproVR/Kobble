@@ -36,8 +36,7 @@ pub enum Schema {
     Struct(StructSchema),
     Tuple(TupleSchema),
     TupleStruct(String, TupleSchema),
-    NewtypeStruct(String, TupleSchema),
-    Enum(EnumSchema),
+    NewtypeStruct(String, Box<Schema>),
     UnitStruct(String),
 }
 
@@ -90,11 +89,14 @@ pub enum DynamicValue {
     Option(Option<Box<DynamicValue>>),
     ByteBuf(Vec<u8>),
     String(String),
+    TupleStruct(String, Vec<DynamicValue>),
+    NewtypeStruct(String, Box<DynamicValue>),
     Struct {
         name: String,
         fields: Vec<(String, DynamicValue)>,
     },
     Tuple(Vec<DynamicValue>),
+    UnitStruct(String),
 }
 
 #[cfg(test)]
@@ -157,7 +159,7 @@ mod tests {
         })
     }
 
-    //#[test]
+    #[test]
     fn test_newtype_struct() {
         #[derive(Serialize, Deserialize)]
         struct A(i32);

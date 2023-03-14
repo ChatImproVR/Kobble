@@ -114,7 +114,8 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         let mut rec = SeqRecorder::new(len);
         let ret = visitor.visit_seq(&mut rec);
 
-        self.0.push(Schema::TupleStruct(name.to_string(), rec.records.0));
+        self.0
+            .push(Schema::TupleStruct(name.to_string(), rec.records.0));
 
         ret
     }
@@ -130,10 +131,12 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         let mut rec = SeqRecorder::new(1);
         let ret = visitor.visit_seq(&mut rec);
 
-        self.0.push(Schema::NewtypeStruct(name.to_string(), rec.records.0));
+        self.0.push(Schema::NewtypeStruct(
+            name.to_string(),
+            Box::new(rec.records.0.remove(0)),
+        ));
 
         ret
-
     }
 
     fn is_human_readable(&self) -> bool {
