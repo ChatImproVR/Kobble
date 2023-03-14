@@ -54,7 +54,10 @@ where
             )
         }
         Schema::NewtypeStruct(name, schema) => {
-            let struct_ = deser.deserialize_tuple(1, TupleVisitor(vec![*schema]))?;
+            let struct_ = deser.deserialize_newtype_struct(
+                string_to_static(name.clone()),
+                TupleVisitor(vec![*schema]),
+            )?;
             let DynamicValue::Tuple(mut tuple) = struct_ else { panic!() };
             Ok(DynamicValue::NewtypeStruct(name, Box::new(tuple.remove(0))))
         }
@@ -124,6 +127,13 @@ impl<'de> Visitor<'de> for TupleVisitor {
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("Tuple")
+    }
+
+    fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_tuple(self.0.len(), self)
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
