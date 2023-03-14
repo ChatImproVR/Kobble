@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use schema_recorder::record_schema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashSet};
 
 mod deserialize;
@@ -11,7 +11,7 @@ mod serialize;
 pub use deserialize::{deserialize_dynamic, SchemaDeserializer};
 
 /// Representation of a data serde-compatible data structure
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Schema {
     //Seq,
     //Map,
@@ -44,7 +44,7 @@ pub enum Schema {
 pub type TupleSchema = Vec<Schema>;
 
 /// Represents a struct
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StructSchema {
     pub name: String,
     pub fields: Vec<(String, Schema)>,
