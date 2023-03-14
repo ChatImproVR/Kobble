@@ -1,13 +1,12 @@
-use bincode::Options as BincodeOptions;
 use deserialize::deserialize_dynamic;
 use schema_recorder::record_schema;
 use serde::Deserialize;
 use std::{collections::HashMap, io::Read};
 
-mod serialize;
 mod deserialize;
 mod error;
 mod schema_recorder;
+mod serialize;
 
 /// Representation of a data serde-compatible data structure
 #[derive(Debug, Clone)]
@@ -75,26 +74,32 @@ pub enum DynamicValue {
     },
 }
 
-/// Use bincode to read the given structure based on its schema
-pub fn bincode_read_dynamic<R: Read>(schema: Schema, reader: R) -> bincode::Result<DynamicValue> {
-    let mut deser = bincode::Deserializer::with_reader(reader, bincode_opts());
-    Ok(deserialize_dynamic(schema, &mut deser).unwrap())
-}
-
-fn bincode_opts() -> impl BincodeOptions {
-    // NOTE: This is actually different from the default bincode serialize() function!!
-    bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .allow_trailing_bytes()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{deserialize::SchemaDeserializer, Schema};
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
+
+    #[track_caller]
+    fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
+        // Create a schema for the datat type
+        let schema = Schema::infer::<T>();
+
+        // Serialize the instance as bytes
+        let bytes = bincode::serialize(&instance).unwrap();
+
+        // Deserialize the bytes into a DynamicValue using the schema 
+        SchemaDeserializer::set_schema(schema);
+        let SchemaDeserializer(dynamic) = bincode::deserialize(&bytes).unwrap();
+
+        // Serialize the DynamicValue into bytes again
+        let re_serialized = bincode::serialize(&dynamic).unwrap();
+
+        // Make sure they are the same!
+        assert_eq!(bytes, re_serialized);
+    }
 
     #[test]
-    fn it_works() {
+    fn test_basic() {
         #[derive(Serialize, Deserialize)]
         struct A {
             a: i32,
@@ -106,21 +111,10 @@ mod tests {
             c: i32,
         }
 
-        let schema = Schema::infer::<A>();
-
-        let instance = A {
+        roundrip_test(A {
             a: 99,
             b: B { c: 23480 },
-        };
-
-        let bytes = bincode::serialize(&instance).unwrap();
-
-        SchemaDeserializer::set_schema(schema);
-        let SchemaDeserializer(dynamic) = bincode::deserialize(&bytes).unwrap();
-
-        let re_serialized = bincode::serialize(&dynamic).unwrap();
-
-        assert_eq!(bytes, re_serialized);
+        })
     }
 }
 

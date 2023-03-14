@@ -74,7 +74,8 @@ impl SchemaDeserializer {
         static SCHEMA: RefCell<Option<Schema>> = RefCell::new(None);
     }
 
-    /// Set the schema (for the current thread!)
+    /// Set the schema
+    /// NOTE: This has thread-local side effects!
     pub fn set_schema(schema: Schema) {
         Self::SCHEMA.with(|f| *f.borrow_mut() = Some(schema));
     }
