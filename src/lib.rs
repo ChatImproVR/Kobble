@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_tuple() {
-        roundrip_test((0i32, 10f32))
+        roundrip_test((0i32, 10f32, 8u128, 90f64))
     }
 
     #[test]
@@ -125,6 +125,15 @@ mod tests {
             b: B { c: 23480 },
         })
     }
+
+    #[test]
+    fn test_newtype_struct() {
+        #[derive(Serialize, Deserialize)]
+        struct A(i32);
+
+        roundrip_test(A(9999));
+    }
+
 }
 
 // TODO: This should be interned to prevent memory leaks...
