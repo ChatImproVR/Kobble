@@ -176,9 +176,8 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        // TODO: Does the distinction between str and string matter here?
         self.0.push(Schema::String);
-        visitor.visit_str(Default::default())
+        visitor.visit_borrowed_str(Default::default())
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -301,7 +300,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         visitor.visit_unit()
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
@@ -310,7 +309,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         todo!("Byte buffers")
     }
 
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
@@ -319,7 +318,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         todo!("Enums")
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {

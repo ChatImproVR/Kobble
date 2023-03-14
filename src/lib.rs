@@ -1,12 +1,7 @@
-use deserialize::deserialize_dynamic;
 use once_cell::sync::Lazy;
 use schema_recorder::record_schema;
 use serde::Deserialize;
-use std::{
-    cell::RefCell,
-    collections::{HashMap, HashSet},
-    io::Read,
-};
+use std::{cell::RefCell, collections::HashSet, io::Read};
 
 mod deserialize;
 mod error;
