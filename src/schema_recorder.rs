@@ -1,7 +1,11 @@
-use serde::de::{self, SeqAccess, value::{MapDeserializer, SeqDeserializer}, Visitor};
-use serde::{Deserialize, Deserializer};
 use crate::error::GenericError;
-use crate::{Schema, StructSchema};
+use crate::{EnumSchema, Schema, StructSchema};
+use serde::de::{
+    self,
+    value::{MapDeserializer, SeqDeserializer},
+    SeqAccess, Visitor,
+};
+use serde::{Deserialize, Deserializer};
 
 /// Use the given struct to record a schema
 pub fn record_schema<'de, T: Deserialize<'de>>() -> Result<Schema, GenericError> {
@@ -10,6 +14,7 @@ pub fn record_schema<'de, T: Deserialize<'de>>() -> Result<Schema, GenericError>
     Ok(rec.0.remove(0))
 }
 
+/// Records the structure of a data type by acting as a Deserializer
 #[derive(Debug, Clone)]
 struct SchemaRecorder(Vec<Schema>);
 
@@ -22,6 +27,30 @@ impl SchemaRecorder {
 impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     type Error = GenericError;
 
+    fn deserialize_enum<V>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        _visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        // Because visitor.visit_enum() necessarily consumes visitor, we cannot visit multiple
+        // enum variants in one shot. One potential solution would be to invoke the entire
+        // serializer many times. Each invocation would take a different path through the variant
+        // tree. These trees would then be merged into a single schema containing all variants.
+        // But this must wait!
+        unimplemented!("Exploring multiple enum variants may prove challenging...")
+    }
+
+    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        unimplemented!("Under the impression this is only relevant to enums")
+    }
+
     fn deserialize_struct<V>(
         self,
         name: &'static str,
@@ -31,9 +60,11 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
+        // Visit the entries in the struct
         let mut rec = SeqRecorder::new(fields.len());
         let ret = visitor.visit_seq(&mut rec);
 
+        // Zip the names of the fields with their respective schema
         let fields = fields
             .iter()
             .map(|s| s.to_string())
@@ -48,18 +79,6 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         ret
     }
 
-    fn deserialize_enum<V>(
-        self,
-        _name: &'static str,
-        _variants: &'static [&'static str],
-        _visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        todo!()
-    }
-
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -72,13 +91,6 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         ret
     }
 
-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        todo!()
-    }
-
     fn deserialize_unit_struct<V>(
         self,
         _name: &'static str,
@@ -87,48 +99,59 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        todo!()
+        todo!("Not sure if I should use the visitor?")
     }
 
     fn deserialize_tuple_struct<V>(
         self,
-        _name: &'static str,
-        _len: usize,
-        _visitor: V,
+        name: &'static str,
+        len: usize,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        let mut rec = SeqRecorder::new(len);
+        let ret = visitor.visit_seq(&mut rec);
+
+        self.0.push(Schema::TupleStruct(name.to_string(), rec.records.0));
+
+        ret
     }
 
     fn deserialize_newtype_struct<V>(
         self,
-        _name: &'static str,
-        _visitor: V,
+        name: &'static str,
+        visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        let mut rec = SeqRecorder::new(1);
+        let ret = visitor.visit_seq(&mut rec);
+
+        self.0.push(Schema::NewtypeStruct(name.to_string(), rec.records.0));
+
+        ret
+
     }
 
     fn is_human_readable(&self) -> bool {
-        todo!()
+        todo!("Not sure how this applies")
     }
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        unimplemented!("Any")
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        todo!()
+        unimplemented!("Any")
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -315,6 +338,15 @@ struct SeqRecorder {
     len: usize,
 }
 
+impl SeqRecorder {
+    pub fn new(len: usize) -> Self {
+        Self {
+            records: SchemaRecorder::new(),
+            len,
+        }
+    }
+}
+
 impl<'de> SeqAccess<'de> for SeqRecorder {
     type Error = GenericError;
 
@@ -336,11 +368,67 @@ impl<'de> SeqAccess<'de> for SeqRecorder {
     }
 }
 
-impl SeqRecorder {
+/*
+struct EnumRecorder {
+    variants: SchemaRecorder,
+    len: usize,
+}
+
+impl EnumRecorder {
     pub fn new(len: usize) -> Self {
         Self {
-            records: SchemaRecorder::new(),
+            variants: SchemaRecorder::new(),
             len,
         }
     }
 }
+
+impl<'de> EnumAccess<'de> for EnumRecorder {
+    type Error = GenericError;
+    type Variant = EnumRecorder;
+
+    fn variant_seed<V>(self, mut seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+        dbg!(std::any::type_name::<V>());
+        dbg!(std::any::type_name::<V::Value>());
+        //let r = seed.deserialize(0.into_deserializer())?;
+        //Ok((r, self))
+        todo!()
+    }
+}
+
+impl<'de> VariantAccess<'de> for EnumRecorder {
+    type Error = GenericError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        todo!()
+    }
+
+    fn struct_variant<V>(
+        self,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        todo!()
+    }
+
+    fn newtype_variant_seed<T>(mut self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: de::DeserializeSeed<'de>,
+    {
+        todo!()
+    }
+}
+*/

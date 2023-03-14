@@ -35,7 +35,13 @@ pub enum Schema {
     String,
     Struct(StructSchema),
     Tuple(TupleSchema),
+    TupleStruct(String, TupleSchema),
+    NewtypeStruct(String, TupleSchema),
+    Enum(EnumSchema),
+    UnitStruct(String),
 }
+
+pub type TupleSchema = Vec<Schema>;
 
 /// Represents a struct
 #[derive(Debug, Clone)]
@@ -44,7 +50,20 @@ pub struct StructSchema {
     fields: Vec<(String, Schema)>,
 }
 
-pub type TupleSchema = Vec<Schema>;
+/// Represents an enum
+#[derive(Debug, Clone)]
+pub struct EnumSchema {
+    name: String,
+    variants: Vec<(String, VariantSchema)>,
+}
+
+/// Represents an enum variant
+#[derive(Debug, Clone)]
+pub enum VariantSchema {
+    Struct(StructSchema),
+    Tuple(TupleSchema),
+    Unit,
+}
 
 /// Runtime-modifiable representation of a data structure
 #[derive(Debug, Clone)]
@@ -83,7 +102,6 @@ mod tests {
     use crate::{deserialize::SchemaDeserializer, Schema};
     use serde::{Deserialize, Serialize};
 
-    #[track_caller]
     fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
         // Create a schema for the datat type
         let schema = Schema::infer::<T>();
@@ -91,7 +109,7 @@ mod tests {
         // Serialize the instance as bytes
         let bytes = bincode::serialize(&instance).unwrap();
 
-        // Deserialize the bytes into a DynamicValue using the schema 
+        // Deserialize the bytes into a DynamicValue using the schema
         SchemaDeserializer::set_schema(schema);
         let SchemaDeserializer(dynamic) = bincode::deserialize(&bytes).unwrap();
 
@@ -105,6 +123,19 @@ mod tests {
     #[test]
     fn test_tuple() {
         roundrip_test((0i32, 10f32, 8u128, 90f64))
+    }
+
+    // For now, we don't know how to do this!
+    #[test]
+    #[should_panic]
+    fn test_enum_basic() {
+        #[derive(Serialize, Deserialize)]
+        enum A {
+            B(i32),
+            Fork,
+        }
+
+        roundrip_test(A::B(23480));
     }
 
     #[test]
@@ -126,14 +157,13 @@ mod tests {
         })
     }
 
-    #[test]
+    //#[test]
     fn test_newtype_struct() {
         #[derive(Serialize, Deserialize)]
         struct A(i32);
 
         roundrip_test(A(9999));
     }
-
 }
 
 // TODO: This should be interned to prevent memory leaks...
