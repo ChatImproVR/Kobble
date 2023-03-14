@@ -11,7 +11,7 @@ mod serialize;
 pub use deserialize::{deserialize_dynamic, SchemaDeserializer};
 
 /// Representation of a data serde-compatible data structure
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum Schema {
     //Seq,
     //Map,
@@ -44,7 +44,7 @@ pub enum Schema {
 pub type TupleSchema = Vec<Schema>;
 
 /// Represents a struct
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct StructSchema {
     pub name: String,
     pub fields: Vec<(String, Schema)>,

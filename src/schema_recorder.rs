@@ -37,14 +37,18 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         // serializer many times. Each invocation would take a different path through the variant
         // tree. These trees would then be merged into a single schema containing all variants.
         // But this must wait!
-        unimplemented!("Exploring multiple enum variants may prove challenging...")
+        Err(GenericError(
+            "Exploring multiple enum variants may prove challenging...".into(),
+        ))
     }
 
     fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!("Under the impression this is only relevant to enums")
+        Err(GenericError(
+            "Under the impression this is only relevant to enums".into(),
+        ))
     }
 
     fn deserialize_struct<V>(
@@ -136,40 +140,36 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         ret
     }
 
-    fn is_human_readable(&self) -> bool {
-        todo!("Not sure how this applies")
-    }
-
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!("Any")
+        Err(GenericError("Any".into()))
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!("Any")
+        Err(GenericError("Any".into()))
     }
 
     fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!(
-            "Is this gauranteed to deserialize a homogenous, variable-length collection?"
-        )
+        Err(GenericError(
+            "Is this gauranteed to deserialize a homogenous, variable-length collection?".into(),
+        ))
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!(
-            "Is this gauranteed to deserialize a homogenous, variable-length collection?"
-        )
+        Err(GenericError(
+            "Is this gauranteed to deserialize a homogenous, variable-length collection?".into(),
+        ))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -306,16 +306,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     {
         //self.0.push(Schema::Bytes);
         //visitor.visit_bytes(Default::default())
-        todo!("Byte buffers")
-    }
-
-    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        //self.0.push(Schema::Option);
-        //visitor.visit_none()
-        todo!("Enums")
+        Err(GenericError("Byte buffers".to_string()))
     }
 
     fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
@@ -324,7 +315,16 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     {
         //self.0.push(Schema::ByteBuf);
         //visitor.visit_byte_buf(Default::default())
-        todo!("Byte buffers")
+        Err(GenericError("Byte buffers".to_string()))
+    }
+
+    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        //self.0.push(Schema::Option);
+        //visitor.visit_none()
+        Err(GenericError("Option type unsupported".to_string()))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
