@@ -1,11 +1,6 @@
-
-
-
 use serde::{de, ser};
 
 use std::fmt::{self, Display};
-
-
 
 // TODO: Make this more descriptive
 #[derive(Debug)]
@@ -33,4 +28,3 @@ impl Display for GenericError {
 }
 
 impl std::error::Error for GenericError {}
-
