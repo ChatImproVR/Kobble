@@ -11,7 +11,6 @@ mod serialize;
 /// Representation of a data serde-compatible data structure
 #[derive(Debug, Clone)]
 pub enum Schema {
-    Str,
     Seq,
     Map,
     I8,
@@ -67,7 +66,6 @@ pub enum VariantSchema {
 /// Runtime-modifiable representation of a data structure
 #[derive(Debug, Clone)]
 pub enum DynamicValue {
-    Str(String),
     Seq(Vec<DynamicValue>),
     Map(HashMap<String, DynamicValue>),
     I8(i8),

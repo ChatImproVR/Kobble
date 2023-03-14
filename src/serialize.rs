@@ -38,6 +38,7 @@ impl Serialize for DynamicValue {
                 }
                 ser.end()
             }
+            DynamicValue::String(s) => serializer.serialize_str(s),
             DynamicValue::I8(v) => serializer.serialize_i8(*v),
             DynamicValue::U8(v) => serializer.serialize_u8(*v),
             DynamicValue::I16(v) => serializer.serialize_i16(*v),

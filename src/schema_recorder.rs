@@ -179,7 +179,8 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::Str);
+        // TODO: Does the distinction between str and string matter here?
+        self.0.push(Schema::String);
         visitor.visit_str(Default::default())
     }
 
