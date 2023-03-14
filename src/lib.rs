@@ -8,6 +8,8 @@ mod error;
 mod schema_recorder;
 mod serialize;
 
+pub use deserialize::{deserialize_dynamic, SchemaDeserializer};
+
 /// Representation of a data serde-compatible data structure
 #[derive(Debug, Clone)]
 pub enum Schema {
@@ -44,8 +46,14 @@ pub type TupleSchema = Vec<Schema>;
 /// Represents a struct
 #[derive(Debug, Clone)]
 pub struct StructSchema {
-    name: String,
-    fields: Vec<(String, Schema)>,
+    pub name: String,
+    pub fields: Vec<(String, Schema)>,
+}
+
+impl Schema {
+    pub fn infer<'de, T: Deserialize<'de>>() -> Self {
+        record_schema::<T>().expect("Failed to infer schema")
+    }
 }
 
 /*
@@ -207,12 +215,6 @@ mod tests {
         struct A;
 
         roundrip_test(A);
-    }
-}
-
-impl Schema {
-    pub fn infer<'de, T: Deserialize<'de>>() -> Self {
-        record_schema::<T>().expect("Failed to infer schema")
     }
 }
 
