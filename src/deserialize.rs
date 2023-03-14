@@ -123,7 +123,7 @@ impl<'de> Visitor<'de> for TupleVisitor {
     type Value = DynamicValue;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("TODO")
+        formatter.write_str("Tuple")
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>

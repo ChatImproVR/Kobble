@@ -112,12 +112,30 @@ mod tests {
     use crate::{deserialize::SchemaDeserializer, Schema};
     use serde::{Deserialize, Serialize};
 
-    fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
+    fn roundrip_test_msgpack<'de, T: Serialize + Deserialize<'de>>(instance: &T) {
         // Create a schema for the datat type
         let schema = Schema::infer::<T>();
 
         // Serialize the instance as bytes
-        let bytes = bincode::serialize(&instance).unwrap();
+        let bytes = rmp_serde::to_vec(instance).unwrap();
+
+        // Deserialize the bytes into a DynamicValue using the schema
+        SchemaDeserializer::set_schema(schema);
+        let SchemaDeserializer(dynamic) = rmp_serde::from_slice(&bytes).unwrap();
+
+        // Serialize the DynamicValue into bytes again
+        let re_serialized = rmp_serde::to_vec(&dynamic).unwrap();
+
+        // Make sure they are the same!
+        assert_eq!(bytes, re_serialized);
+    }
+
+    fn roundrip_test_bincode<'de, T: Serialize + Deserialize<'de>>(instance: &T) {
+        // Create a schema for the datat type
+        let schema = Schema::infer::<T>();
+
+        // Serialize the instance as bytes
+        let bytes = bincode::serialize(instance).unwrap();
 
         // Deserialize the bytes into a DynamicValue using the schema
         SchemaDeserializer::set_schema(schema);
@@ -128,6 +146,11 @@ mod tests {
 
         // Make sure they are the same!
         assert_eq!(bytes, re_serialized);
+    }
+
+    fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
+        roundrip_test_bincode(&instance);
+        roundrip_test_msgpack(&instance);
     }
 
     #[test]
