@@ -1,7 +1,12 @@
 use deserialize::deserialize_dynamic;
+use once_cell::sync::Lazy;
 use schema_recorder::record_schema;
 use serde::Deserialize;
-use std::{collections::HashMap, io::Read};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    io::Read,
+};
 
 mod deserialize;
 mod error;
@@ -184,13 +189,29 @@ mod tests {
     }
 }
 
-// TODO: This should be interned to prevent memory leaks...
-pub(crate) fn leak_string(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
-
 impl Schema {
     pub fn infer<'de, T: Deserialize<'de>>() -> Self {
         record_schema::<T>().expect("Failed to infer schema")
     }
+}
+
+/// Converts a string to a static string
+pub(crate) fn string_to_static(s: String) -> &'static str {
+    // String cache, so that we don't leak memory converting the same string over and over
+    // TODO: Use fxhash? This is non-crypto!
+    thread_local! {
+        static STRING_CACHE: RefCell<Lazy<HashSet<&'static str>>>
+            = RefCell::new(Lazy::new(HashSet::new));
+    }
+
+    STRING_CACHE.with(|cache| {
+        let maybe_cached: Option<&'static str> = cache.borrow().get(s.as_str()).copied();
+        if let Some(cached) = maybe_cached {
+            cached
+        } else {
+            let s: &'static str = Box::leak(s.into_boxed_str());
+            cache.borrow_mut().insert(s);
+            s
+        }
+    })
 }

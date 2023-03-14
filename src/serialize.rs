@@ -1,7 +1,7 @@
 use serde::ser::*;
 use serde::{Serialize, Serializer};
 
-use crate::{leak_string, DynamicValue};
+use crate::{string_to_static, DynamicValue};
 
 impl Serialize for DynamicValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -11,10 +11,10 @@ impl Serialize for DynamicValue {
         match self {
             DynamicValue::Struct { name, fields } => {
                 let mut ser =
-                    serializer.serialize_struct(leak_string(name.clone()), fields.len())?;
+                    serializer.serialize_struct(string_to_static(name.clone()), fields.len())?;
 
                 for (name, value) in fields {
-                    ser.serialize_field(leak_string(name.clone()), value)?
+                    ser.serialize_field(string_to_static(name.clone()), value)?
                 }
 
                 ser.end()
@@ -28,18 +28,18 @@ impl Serialize for DynamicValue {
                 ser.end()
             }
             DynamicValue::NewtypeStruct(name, value) => {
-                serializer.serialize_newtype_struct(leak_string(name.clone()), value)
+                serializer.serialize_newtype_struct(string_to_static(name.clone()), value)
             }
             DynamicValue::TupleStruct(name, tuple) => {
-                let mut ser =
-                    serializer.serialize_tuple_struct(leak_string(name.clone()), tuple.len())?;
+                let mut ser = serializer
+                    .serialize_tuple_struct(string_to_static(name.clone()), tuple.len())?;
                 for field in tuple {
                     ser.serialize_field(field)?;
                 }
                 ser.end()
             }
             DynamicValue::UnitStruct(name) => {
-                serializer.serialize_unit_struct(leak_string(name.clone()))
+                serializer.serialize_unit_struct(string_to_static(name.clone()))
             }
             DynamicValue::String(s) => serializer.serialize_str(s),
             DynamicValue::I8(v) => serializer.serialize_i8(*v),

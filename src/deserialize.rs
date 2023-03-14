@@ -3,7 +3,7 @@ use serde::{de::Visitor, Deserialize, Deserializer};
 use std::cell::RefCell;
 use std::fmt;
 
-use crate::{leak_string, DynamicValue, Schema, StructSchema, TupleSchema};
+use crate::{string_to_static, DynamicValue, Schema, StructSchema, TupleSchema};
 
 /// A struct which pretends to be the schema set with set_schema.
 /// Note that schema are set on a per-thread basis!
@@ -41,14 +41,14 @@ where
             let field_names: Vec<&'static str> = schema
                 .fields
                 .iter()
-                .map(|(name, _)| leak_string(name.clone()))
+                .map(|(name, _)| string_to_static(name.clone()))
                 .collect();
 
             let field_names: &'static [&'static str] = Box::leak(field_names.into_boxed_slice());
 
             // Deserialize the struct
             deser.deserialize_struct(
-                leak_string(schema.name.clone()),
+                string_to_static(schema.name.clone()),
                 field_names,
                 StructVisitor(schema),
             )
