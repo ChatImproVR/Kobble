@@ -202,6 +202,20 @@ mod tests {
         roundrip_test(A::Spoon);
     }
 
+    /* TODO: Handle this corner case!
+    #[test]
+    #[should_panic]
+    fn test_data_enum_corner_case() {
+        #[derive(Serialize, Deserialize)]
+        enum A {
+            Fork,
+            B(i32),
+        }
+
+        roundrip_test(A::Fork);
+    }
+    */
+
     #[test]
     fn test_struct() {
         #[derive(Serialize, Deserialize)]
