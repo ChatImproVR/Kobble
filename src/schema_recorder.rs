@@ -305,24 +305,27 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::Bytes);
-        visitor.visit_bytes(Default::default())
+        //self.0.push(Schema::Bytes);
+        //visitor.visit_bytes(Default::default())
+        todo!("Byte buffers")
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::Option);
-        visitor.visit_none()
+        //self.0.push(Schema::Option);
+        //visitor.visit_none()
+        todo!("Enums")
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        self.0.push(Schema::ByteBuf);
-        visitor.visit_byte_buf(Default::default())
+        //self.0.push(Schema::ByteBuf);
+        //visitor.visit_byte_buf(Default::default())
+        todo!("Byte buffers")
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>

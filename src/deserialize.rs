@@ -81,11 +81,6 @@ where
         Schema::Char => Ok(DynamicValue::Char(char::deserialize(deser)?)),
         Schema::Unit => Ok(DynamicValue::Unit),
         Schema::String => Ok(DynamicValue::String(String::deserialize(deser)?)),
-        Schema::Map => todo!(),
-        Schema::Bytes => todo!(),
-        Schema::ByteBuf => todo!(),
-        Schema::Option => todo!(),
-        Schema::Seq => todo!(),
     }
 }
 

@@ -16,8 +16,8 @@ mod serialize;
 /// Representation of a data serde-compatible data structure
 #[derive(Debug, Clone)]
 pub enum Schema {
-    Seq,
-    Map,
+    //Seq,
+    //Map,
     I8,
     U8,
     I16,
@@ -33,9 +33,9 @@ pub enum Schema {
     Bool,
     Char,
     Unit,
-    Bytes,
-    Option,
-    ByteBuf,
+    //Bytes,
+    //Option,
+    //ByteBuf,
     String,
     Struct(StructSchema),
     Tuple(TupleSchema),
@@ -130,6 +130,32 @@ mod tests {
     #[test]
     fn test_tuple() {
         roundrip_test((0i32, 10f32, 8u128, 90f64))
+    }
+
+    #[test]
+    fn test_string() {
+        roundrip_test("Yeah babeeey")
+    }
+
+    #[test]
+    fn test_primitives() {
+        roundrip_test((
+            0i8,
+            1u8,
+            2i16,
+            3u16,
+            4i32,
+            5u32,
+            6i64,
+            7u64,
+            8i128,
+            9u128,
+            10f32,
+            11f64,
+            true,
+            'a',
+            (),
+        ))
     }
 
     // For now, we don't know how to do this!
