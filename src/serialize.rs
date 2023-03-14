@@ -9,7 +9,6 @@ impl Serialize for DynamicValue {
         S: serde::Serializer,
     {
         match self {
-            DynamicValue::I32(v) => serializer.serialize_i32(*v),
             DynamicValue::Struct { name, fields } => {
                 let mut ser =
                     serializer.serialize_struct(leak_string(name.clone()), fields.len())?;
@@ -28,6 +27,20 @@ impl Serialize for DynamicValue {
 
                 ser.end()
             }
+            DynamicValue::I8(v) => serializer.serialize_i8(*v),
+            DynamicValue::U8(v) => serializer.serialize_u8(*v),
+            DynamicValue::I16(v) => serializer.serialize_i16(*v),
+            DynamicValue::U16(v) => serializer.serialize_u16(*v),
+            DynamicValue::I32(v) => serializer.serialize_i32(*v),
+            DynamicValue::U32(v) => serializer.serialize_u32(*v),
+            DynamicValue::I64(v) => serializer.serialize_i64(*v),
+            DynamicValue::U64(v) => serializer.serialize_u64(*v),
+            DynamicValue::I128(v) => serializer.serialize_i128(*v),
+            DynamicValue::U128(v) => serializer.serialize_u128(*v),
+            DynamicValue::Char(v) => serializer.serialize_char(*v),
+            DynamicValue::F32(v) => serializer.serialize_f32(*v),
+            DynamicValue::F64(v) => serializer.serialize_f64(*v),
+            DynamicValue::Unit => serializer.serialize_unit(),
             _ => todo!()
         }
     }

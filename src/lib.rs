@@ -66,7 +66,7 @@ pub enum DynamicValue {
     F64(f64),
     Bool(bool),
     Char(char),
-    Unit(()),
+    Unit,
     Bytes(Vec<u8>),
     Option(Option<Box<DynamicValue>>),
     ByteBuf(Vec<u8>),
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_tuple() {
-        roundrip_test((0i32, 0i32))
+        roundrip_test((0i32, 10f32))
     }
 
     #[test]
