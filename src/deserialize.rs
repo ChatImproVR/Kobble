@@ -54,20 +54,13 @@ where
             )
         }
         Schema::NewtypeStruct(name, schema) => {
-            let struct_ = deser.deserialize_newtype_struct(
-                leak_string(name.clone()),
-                TupleVisitor(vec![*schema]),
-            )?;
+            let struct_ = deser.deserialize_tuple(1, TupleVisitor(vec![*schema]))?;
             let DynamicValue::Tuple(mut tuple) = struct_ else { panic!() };
             Ok(DynamicValue::NewtypeStruct(name, Box::new(tuple.remove(0))))
         }
         Schema::Tuple(schema) => deser.deserialize_tuple(schema.len(), TupleVisitor(schema)),
         Schema::TupleStruct(name, schema) => {
-            let tuple = deser.deserialize_tuple_struct(
-                leak_string(name.clone()),
-                schema.len(),
-                TupleVisitor(schema),
-            )?;
+            let tuple = deser.deserialize_tuple(schema.len(), TupleVisitor(schema))?;
             let DynamicValue::Tuple(tuple) = tuple else { panic!() };
             Ok(DynamicValue::TupleStruct(name, tuple))
         }

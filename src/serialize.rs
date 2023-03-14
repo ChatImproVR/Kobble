@@ -27,6 +27,17 @@ impl Serialize for DynamicValue {
 
                 ser.end()
             }
+            DynamicValue::NewtypeStruct(name, value) => {
+                serializer.serialize_newtype_struct(leak_string(name.clone()), value)
+            }
+            DynamicValue::TupleStruct(name, tuple) => {
+                let mut ser =
+                    serializer.serialize_tuple_struct(leak_string(name.clone()), tuple.len())?;
+                for field in tuple {
+                    ser.serialize_field(field)?;
+                }
+                ser.end()
+            }
             DynamicValue::I8(v) => serializer.serialize_i8(*v),
             DynamicValue::U8(v) => serializer.serialize_u8(*v),
             DynamicValue::I16(v) => serializer.serialize_i16(*v),
@@ -41,7 +52,7 @@ impl Serialize for DynamicValue {
             DynamicValue::F32(v) => serializer.serialize_f32(*v),
             DynamicValue::F64(v) => serializer.serialize_f64(*v),
             DynamicValue::Unit => serializer.serialize_unit(),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }

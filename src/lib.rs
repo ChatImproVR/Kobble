@@ -166,6 +166,14 @@ mod tests {
 
         roundrip_test(A(9999));
     }
+
+    #[test]
+    fn test_tuple_struct() {
+        #[derive(Serialize, Deserialize)]
+        struct A(i32, String);
+
+        roundrip_test(A(9999, "Binkus".to_string()));
+    }
 }
 
 // TODO: This should be interned to prevent memory leaks...
