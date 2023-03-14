@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use schema_recorder::record_schema;
 use serde::Deserialize;
-use std::{cell::RefCell, collections::HashSet, io::Read};
+use std::{cell::RefCell, collections::HashSet};
 
 mod deserialize;
 mod error;

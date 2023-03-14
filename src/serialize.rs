@@ -1,7 +1,6 @@
-use serde::ser::*;
-use serde::{Serialize, Serializer};
-
 use crate::{string_to_static, DynamicValue};
+use serde::ser::*;
+use serde::Serialize;
 
 impl Serialize for DynamicValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
