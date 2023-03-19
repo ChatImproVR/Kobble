@@ -132,7 +132,7 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
     {
         let mut rec = SeqRecorder::new(1);
         thread_local! {
-            static BRONK: RefCell<u32> = RefCell::new(10);
+            static BRONK: RefCell<u32> = RefCell::new(100);
         }
 
         dbg!(name.as_ptr());

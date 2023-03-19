@@ -145,11 +145,19 @@ mod tests {
         assert_eq!(bytes, re_serialized);
     }
 
+    #[derive(Serialize, Deserialize)]
+    pub struct A([Box<v::A>; 3]);
+
+    mod v {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Serialize, Deserialize)]
+        pub struct A([Box<crate::tests::A>; 3]);
+    }
+
     #[test]
     fn test_infinity() {
-        #[derive(Serialize, Deserialize)]
-        struct Infinity([Box<Infinity>; 3]);
-        Schema::infer::<Infinity>();
+        Schema::infer::<A>();
     }
 
     #[test]
@@ -213,13 +221,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_data_enum_corner_case() {
-        #[derive(Serialize, Deserialize)]
-        enum A {
-            Fork,
-            B(i32),
-        }
+    #[derive(Serialize, Deserialize)]
+    enum A {
+    Fork,
+    B(i32),
+    }
 
-        roundrip_test(A::Fork);
+    roundrip_test(A::Fork);
     }
     */
 
@@ -245,10 +253,10 @@ mod tests {
     /*
     #[test]
     fn test_newtype_struct() {
-        #[derive(Serialize, Deserialize)]
-        struct A(i32);
+    #[derive(Serialize, Deserialize)]
+    struct A(i32);
 
-        roundrip_test(A(9999));
+    roundrip_test(A(9999));
     }
     */
 
