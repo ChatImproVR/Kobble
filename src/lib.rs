@@ -128,7 +128,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
-        // Create a schema for the datat type
+        // Create a schema for the data type
         let schema = Schema::infer::<T>();
 
         // Serialize the instance as bytes
@@ -143,6 +143,13 @@ mod tests {
 
         // Make sure they are the same!
         assert_eq!(bytes, re_serialized);
+    }
+
+    #[test]
+    fn test_infinity() {
+        #[derive(Serialize, Deserialize)]
+        struct Infinity(Box<Infinity>);
+        Schema::infer::<Infinity>();
     }
 
     #[test]
