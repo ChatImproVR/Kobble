@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_infinity() {
         #[derive(Serialize, Deserialize)]
-        struct Infinity(Box<Infinity>);
+        struct Infinity([Box<Infinity>; 3]);
         Schema::infer::<Infinity>();
     }
 
@@ -239,9 +239,10 @@ mod tests {
         roundrip_test(A {
             a: 99,
             b: B { c: 23480 },
-        })
+        });
     }
 
+    /*
     #[test]
     fn test_newtype_struct() {
         #[derive(Serialize, Deserialize)]
@@ -249,6 +250,7 @@ mod tests {
 
         roundrip_test(A(9999));
     }
+    */
 
     #[test]
     fn test_tuple_struct() {

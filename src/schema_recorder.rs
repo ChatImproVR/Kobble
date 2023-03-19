@@ -1,3 +1,6 @@
+use std::any::TypeId;
+use std::cell::RefCell;
+
 use crate::error::GenericError;
 use crate::{EnumSchema, Schema, StructSchema};
 use serde::de::{self, EnumAccess, IntoDeserializer, SeqAccess, VariantAccess, Visitor};
@@ -128,6 +131,20 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         V: Visitor<'de>,
     {
         let mut rec = SeqRecorder::new(1);
+        thread_local! {
+            static BRONK: RefCell<u32> = RefCell::new(10);
+        }
+
+        dbg!(name.as_ptr());
+
+        if BRONK.with(|x| {
+            *x.borrow_mut() -= 1;
+            *x.borrow()
+        }) == 0
+        {
+            panic!();
+        }
+
         let ret = visitor.visit_seq(&mut rec);
 
         self.0.push(Schema::NewtypeStruct(
