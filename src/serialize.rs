@@ -8,6 +8,13 @@ impl Serialize for DynamicValue {
         S: serde::Serializer,
     {
         match self {
+            DynamicValue::UniformSequence(values) => {
+                let mut ser = serializer.serialize_seq(Some(values.len()))?;
+                for value in values {
+                    ser.serialize_element(value)?;
+                }
+                ser.end()
+            }
             DynamicValue::Struct { name, fields } => {
                 let mut ser =
                     serializer.serialize_struct(string_to_static(name.clone()), fields.len())?;

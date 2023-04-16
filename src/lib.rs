@@ -42,6 +42,8 @@ pub enum Schema {
     NewtypeStruct(String, Box<Schema>),
     /// Contains name
     UnitStruct(String),
+    /// (name, data type)
+    UniformSequence(Box<Schema>),
     /// (Enum name, variants)
     /// NOTE This only describes data-less enums!
     Enum(EnumSchema),
@@ -117,6 +119,7 @@ pub enum DynamicValue {
         fields: Vec<(String, DynamicValue)>,
     },
     Tuple(Vec<DynamicValue>),
+    UniformSequence(Vec<DynamicValue>),
     UnitStruct(String),
     Enum(EnumSchema, u32),
 }
@@ -128,7 +131,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
-        // Create a schema for the datat type
+        // Create a schema for the data type
         let schema = Schema::infer::<T>();
 
         // Serialize the instance as bytes
@@ -262,6 +265,13 @@ mod tests {
     #[test]
     fn test_vector() {
         roundrip_test(Vec3::new(1., 2., 3.));
+    }
+
+    #[test]
+    fn test_vec() {
+        roundrip_test(vec![1, 2, 3]);
+        roundrip_test::<Vec<i32>>(Default::default());
+        roundrip_test(vec![vec![1, 2], vec![3, 4, 5]])
     }
 
     #[test]
