@@ -131,7 +131,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     fn roundrip_test<'de, T: Serialize + Deserialize<'de>>(instance: T) {
-        // Create a schema for the datat type
+        // Create a schema for the data type
         let schema = Schema::infer::<T>();
 
         // Serialize the instance as bytes
@@ -270,6 +270,8 @@ mod tests {
     #[test]
     fn test_vec() {
         roundrip_test(vec![1, 2, 3]);
+        roundrip_test::<Vec<i32>>(Default::default());
+        roundrip_test(vec![vec![1, 2], vec![3, 4, 5]])
     }
 
     #[test]
