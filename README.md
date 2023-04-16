@@ -49,9 +49,8 @@ An instance of `Schema` describes the structure of a particular datatype. They c
 ```rust
 let schema = Schema::infer::<Person>();
 ```
-You may also create schema for new data types of almost\* any description.
 
-Now suppose we have an application running elsewhere, with no knowledge of the `Person` data type. We are building a GUI toolkit that is supposed to edit arbitrary data. Assuming `schema` has already been sent to us, along with the binary representation of a `Person` in bincode, we can recover `DynamicValue`:
+Now suppose we have an application running elsewhere, with no knowledge of the `Person` data type. We are building a GUI toolkit that is supposed to edit arbitrary data. Assuming `Schema` has already been sent to us, along with the binary representation of a `Person` in bincode, we can recover `DynamicValue`:
 ```rust
 fn recombobulate_type(data: &[u8], schema: Schema) {
     SchemaDeserializer::set_schema(schema);
