@@ -152,22 +152,23 @@ impl<'de> Deserializer<'de> for &mut SchemaRecorder {
         Err(GenericError("Any".into()))
     }
 
-    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        Err(GenericError(
-            "Is this gauranteed to deserialize a homogenous, variable-length collection?".into(),
-        ))
+        let mut rec = SeqRecorder::new(1);
+        let ret = visitor.visit_seq(&mut rec)?;
+        let _ty = rec.records.0.remove(0);
+        self.0.push(Schema::UniformSequence(Box::new(_ty)));
+
+        Ok(ret)
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        Err(GenericError(
-            "Is this gauranteed to deserialize a homogenous, variable-length collection?".into(),
-        ))
+        Err(GenericError("Maps unsupported".into()))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>

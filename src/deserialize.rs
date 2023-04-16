@@ -36,6 +36,7 @@ where
     D: serde::Deserializer<'de>,
 {
     match schema {
+        Schema::UniformSequence(schema) => deser.deserialize_seq(UniformSequenceVisitor(*schema)),
         Schema::Struct(schema) => {
             // Make field names static so serde is happy
             let field_names: Vec<&'static str> = schema
@@ -100,6 +101,34 @@ where
     }
 }
 
+/// Visitor for uniform sequences (e.g. vectors)
+struct UniformSequenceVisitor(Schema);
+
+impl<'de> Visitor<'de> for UniformSequenceVisitor {
+    type Value = DynamicValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("UniformSequence (Vec or variable length array)")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut values = vec![];
+
+        let UniformSequenceVisitor(schema) = self;
+
+        SchemaDeserializer::set_schema(schema.clone());
+        while let Some(SchemaDeserializer(dynamic)) = seq.next_element()? {
+            values.push(dynamic);
+            SchemaDeserializer::set_schema(schema.clone());
+        }
+
+        Ok(DynamicValue::UniformSequence(values))
+    }
+}
+
 /// Visitor for structs; converts a StructSchema into a DynamicValue under the given deserializer
 struct StructVisitor(StructSchema);
 
@@ -118,9 +147,7 @@ impl<'de> Visitor<'de> for StructVisitor {
 
         for (name, schema) in self.0.fields {
             SchemaDeserializer::set_schema(schema);
-            let SchemaDeserializer(dynamic) = seq
-                .next_element::<SchemaDeserializer>()?
-                .expect("Schema mismatch");
+            let SchemaDeserializer(dynamic) = seq.next_element()?.expect("Schema mismatch");
 
             fields.push((name, dynamic));
         }
