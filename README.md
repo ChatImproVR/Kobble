@@ -1,5 +1,5 @@
 # Kobble
-A schema format for Serde. Kobble abuses serde's reflection to allow you to transmit your data type and it's serialized representation seperately. Kobble provides `DynamicValue`, a generic instatiation of an arbtrary data type.
+A schema format for Serde. Kobble abuses serde's reflection to allow you to transmit your data type and it's serialized representation seperately. Kobble provides `DynamicValue`, a generic instatiation of an arbitrary data type.
 
 Here's a round trip test which demonstrates what kobble is capable of:
 ```rust
